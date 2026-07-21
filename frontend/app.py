@@ -55,7 +55,7 @@ st.markdown(
         .ob-card {
             background-color: #1E293B;
             padding: 1rem 1.2rem;
-            border-radius: 10px;
+            border-radius:12px;
             margin-bottom: 0.8rem;
             border: 1px solid #334155;
         }
@@ -67,7 +67,7 @@ st.markdown(
             align-items: center;
             padding: 0.8rem 1.2rem;
             background-color: #1E293B;
-            border-radius: 10px;
+            border-radius:12px;
             margin-bottom: 1.2rem;
         }
         .ob-navbar h2 {
@@ -80,7 +80,7 @@ st.markdown(
             background-color: #3B82F6;
             color: white;
             border: none;
-            border-radius: 8px;
+            border-radius:10px;;
             padding: 0.4rem 1rem;
         }
         div.stButton > button:hover {
@@ -160,7 +160,7 @@ st.markdown(
     """
     <div class="ob-navbar">
         <h2> OmniBrain</h2>
-        <div> Profile</div>
+        <div>Workspace</div>
     </div>
     """,
     unsafe_allow_html=True,
@@ -184,10 +184,10 @@ with st.sidebar:
             if not already:
                 info = process_uploaded_file(file)
                 st.session_state.uploaded_files_info.append(info)
-                st.success(f"✓ {file.name} indexed successfully")
+                st.success(f"{file.name} indexed successfully")
 
     st.markdown("---")
-    st.markdown("###  Uploaded Files")
+    st.markdown("### Uploaded Files")
     if st.session_state.uploaded_files_info:
         for f in st.session_state.uploaded_files_info:
             st.markdown(f"• {f['name']}")
@@ -195,7 +195,7 @@ with st.sidebar:
         st.caption("Koi file upload nahi hui abhi.")
 
     st.markdown("---")
-    st.markdown("###  Settings")
+    st.markdown("### Settings")
     language = st.selectbox("Language", ["English", "Hindi", "Hinglish"])
     model = st.selectbox("Model", ["GPT-4o", "Claude", "Gemini"])
     theme = st.selectbox("Theme", ["Dark", "Light"])
@@ -213,7 +213,7 @@ with main_col:
             """
             <div class="ob-card" style="text-align:center; padding:3rem;">
                 <h1> OmniBrain</h1>
-                <p style="color:#94A3B8;">Your AI Research Assistant</p>
+                <p style="color:#94A3B8;">AI-powered Research Workspace</p>
                 <p>Upload documents and ask questions.</p>
             </div>
             """,
@@ -226,7 +226,7 @@ with main_col:
             f"""
             <div class="ob-card">
                  <b>{latest['name']}</b><br>
-                ✓ Indexed Successfully<br>
+                 Status: Indexed Successfully<br>
                 Pages: {latest['pages']} &nbsp;|&nbsp; Chunks: {latest['chunks']}
             </div>
             """,
@@ -279,7 +279,7 @@ with right_col:
                 <b>File Name:</b> {latest['name']}<br>
                 <b>Pages:</b> {latest['pages']}<br>
                 <b>Language:</b> {language}<br>
-                <b>Keywords:</b> (coming soon)<br>
+                <b>Keywords:</b> Available after indexing<br>
                 <b>Last Updated:</b> {latest['uploaded_at']}
             </div>
             """,
@@ -295,7 +295,7 @@ with right_col:
 st.markdown(
     """
     <div class="ob-footer">
-        # Built with  using Streamlit, FastAPI, LangChain & LLM
+         Built with Streamlit, FastAPI, LangChain & LLM
     </div>
     """,
     unsafe_allow_html=True,
