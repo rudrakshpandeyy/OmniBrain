@@ -13,8 +13,13 @@ Real AI jawaab ke liye "get_ai_response()" function ko
 apne LangChain / OpenAI / Anthropic API call se replace karo.
 """
 
+import os
+import requests
 import streamlit as st
 from datetime import datetime
+
+# Configurable backend URL
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
 # Optional libs for reading real file info (agar installed nahi hai to app phir bhi chalega)
 try:
@@ -114,21 +119,52 @@ if "messages" not in st.session_state:
 if "pending_prompt" not in st.session_state:
     st.session_state.pending_prompt = None
 
+if "document_id" not in st.session_state:
+    st.session_state.document_id = None
+
 
 # ----------------------------------------------------------------------
-# 4. DUMMY AI RESPONSE FUNCTION
-#    -> Isko baad me apne real LLM call se replace karo
+# 4. BACKEND CHAT RESPONSE FUNCTION
 # ----------------------------------------------------------------------
 def get_ai_response(user_query: str) -> str:
+    """Calls the backend chat endpoint with actual request/response schema."""
     if not st.session_state.uploaded_files_info:
         return "Pehle koi document upload karo, fir main uske base par jawaab dunga."
-    file_names = ", ".join([f["name"] for f in st.session_state.uploaded_files_info])
-    return (
-        f"(Demo answer) Tumne pucha: '{user_query}'.\n\n"
-        f"Main abhi ek placeholder jawaab de raha hoon based on: {file_names}. "
-        f"Real AI jawaab ke liye app.py me get_ai_response() function ko apne "
-        f"LangChain/OpenAI/Anthropic API call se replace karo."
-    )
+    
+    # Use the document_id of the latest uploaded file
+    latest = st.session_state.uploaded_files_info[-1]
+    document_id = latest.get("document_id") or st.session_state.get("document_id")
+    
+    if not document_id:
+        return "Pehle koi document upload karo, fir main uske base par jawaab dunga."
+    
+    payload = {
+        "document_id": document_id,
+        "question": user_query
+    }
+    
+    try:
+        response = requests.post(f"{BACKEND_URL}/chat", json=payload)
+        if response.status_code == 200:
+            res_data = response.json()
+            answer = res_data.get("answer", "")
+            sources = res_data.get("sources", [])
+            
+            # Format display with sources if present
+            if sources:
+                sources_str = "\n\n**Sources:**\n" + "\n".join(f"- {s}" for s in sources)
+                return f"{answer}{sources_str}"
+            return answer
+        else:
+            try:
+                err_msg = response.json().get("detail", response.text)
+            except Exception:
+                err_msg = response.text
+            st.error(f"API Error: {err_msg}")
+            return f"Error: {err_msg}"
+    except Exception as e:
+        st.error(f"Failed to connect to backend: {str(e)}")
+        return f"Connection Error: {str(e)}"
 
 
 def process_uploaded_file(file):
@@ -182,9 +218,27 @@ with st.sidebar:
         for file in uploaded:
             already = any(f["name"] == file.name for f in st.session_state.uploaded_files_info)
             if not already:
-                info = process_uploaded_file(file)
-                st.session_state.uploaded_files_info.append(info)
-                st.success(f"{file.name} indexed successfully")
+                # Call backend upload endpoint using actual request format
+                files = {"file": (file.name, file.getvalue(), file.type or "application/pdf")}
+                try:
+                    response = requests.post(f"{BACKEND_URL}/upload", files=files)
+                    if response.status_code == 201:
+                        res_data = response.json()
+                        document_id = res_data.get("document_id")
+                        st.session_state.document_id = document_id
+                        
+                        info = process_uploaded_file(file)
+                        info["document_id"] = document_id
+                        st.session_state.uploaded_files_info.append(info)
+                        st.success(f"{file.name} uploaded and indexed. ID: {document_id}")
+                    else:
+                        try:
+                            err_msg = response.json().get("detail", response.text)
+                        except Exception:
+                            err_msg = response.text
+                        st.error(f"Failed to upload {file.name}: {err_msg}")
+                except Exception as e:
+                    st.error(f"Connection error to backend for {file.name}: {str(e)}")
 
     st.markdown("---")
     st.markdown("### Uploaded Files")
